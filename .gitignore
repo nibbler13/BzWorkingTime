@@ -259,3 +259,9 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+*.config
+172.16.9.76.txt
+*.config
+BzWorkingTime/App.config
+*.settings
+BzWorkingTime/Properties/Settings.Designer.cs
