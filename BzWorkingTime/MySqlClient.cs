@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -143,33 +144,41 @@ namespace BzWorkingTime {
 			return string.Empty;
 		}
 
-		public List<ItemWorkPeriod> GetWorkPeriods(string userId, string date) {
+		public List<ItemWorkPeriod> GetWorkPeriods(string userId, DateTime periodStart, DateTime periodFinish) {
 			List<ItemWorkPeriod> workPeriods = new List<ItemWorkPeriod>();
 
 			DataTable dataTable = GetDataTable(queryGetWorkPeriods,
 				new Dictionary<string, object> {
 					{ "@userId", userId },
-					{ "@date", "%" + date + "%" }
+					{ "@periodStart", periodStart.ToString("yyyy-MM-dd 00:00:00") },
+					{ "@periodFinish", periodFinish.ToString("yyyy-MM-dd 23:59:59") }
 				});
 
 			foreach (DataRow row in dataTable.Rows) {
 				try {
 					string id = row["ID"].ToString();
-					string timestampX = row["TIMESTAMP_X"].ToString();
 					string dateStart = row["DATE_START"].ToString();
+
+					if (!DateTime.TryParse(dateStart, out DateTime start))
+						continue;
+					
+					ItemWorkPeriod workPeriod = new ItemWorkPeriod(start.Date) {
+						ID = id,
+						DateStart = start
+					};
+
+					string timestampX = row["TIMESTAMP_X"].ToString();
 					string dateFinish = row["DATE_FINISH"].ToString();
 					string duration = row["DURATION"].ToString();
 
-					ItemWorkPeriod workPeriod = new ItemWorkPeriod() { Id = id };
-
 					if (DateTime.TryParse(timestampX, out DateTime timestamp))
 						workPeriod.TimestampX = timestamp;
-					if (DateTime.TryParse(dateStart, out DateTime start))
-						workPeriod.DateStart = start;
+
+
 					if (DateTime.TryParse(dateFinish, out DateTime finish))
 						workPeriod.DateFinish = finish;
-					if (!string.IsNullOrEmpty(duration) &&
-						!duration.Equals("0"))
+
+					if (!string.IsNullOrEmpty(duration) && !duration.Equals("0"))
 						workPeriod.Duration = TimeSpan.FromSeconds(int.Parse(duration));
 
 					workPeriods.Add(workPeriod);
@@ -178,6 +187,20 @@ namespace BzWorkingTime {
 						MessageBoxButton.OK, MessageBoxImage.Error);
 					break;
 				}
+			}
+
+			for (DateTime date = periodStart.Date; date.Date <= periodFinish.Date; date = date.AddDays(1)) {
+				bool isPresent = false;
+
+				foreach (ItemWorkPeriod item in workPeriods)
+					if (item.Date == date) {
+						isPresent = true;
+						break;
+					}
+
+				if (isPresent) continue;
+
+				workPeriods.Add(new ItemWorkPeriod(date));
 			}
 
 			return workPeriods;

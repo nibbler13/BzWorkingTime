@@ -32,18 +32,10 @@ namespace BzWorkingTime {
 				Directory.CreateDirectory(resultPath);
 
 			string resultFile = Path.Combine(resultPath, resultFilePrefix + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx");
-			try {
-				File.Copy(templateFile, resultFile);
-			} catch (Exception e) {
-				backgroundWorker.ReportProgress((int)progressCurrent);
-				return "Не удалось скопировать файл шаблона в новый файл: " + resultFile + ", " + e.Message;
-			}
 			
 			IWorkbook workbook;
-			using (FileStream stream = new FileStream(resultFile, FileMode.Open, FileAccess.Read)) {
+			using (FileStream stream = new FileStream(templateFile, FileMode.Open, FileAccess.Read))
 				workbook = new XSSFWorkbook(stream);
-				stream.Close();
-			}
 
 			progressCurrent += 10;
 			backgroundWorker.ReportProgress((int)progressCurrent);
@@ -54,7 +46,7 @@ namespace BzWorkingTime {
 			ISheet sheet = workbook.GetSheet("Data");
 
 			double progressStep = (progressTo / 2 - progressCurrent) / dataTable.Rows.Count;
-
+			
 			foreach (DataRow dataRow in dataTable.Rows) {
 				backgroundWorker.ReportProgress((int)progressCurrent);
 				progressCurrent += progressStep;
@@ -73,6 +65,7 @@ namespace BzWorkingTime {
 					
 					ICell cell = row.CreateCell(columnNumber);
 					string value = dataRow[dataColumn].ToString();
+					Console.WriteLine("value: '" + value + "'");
 
 					if (dataColumn.ColumnName.Contains("DATE")) {
 						if (DateTime.TryParse(value, out DateTime dateTime))
@@ -96,10 +89,8 @@ namespace BzWorkingTime {
 			progressCurrent += progressStep;
 			backgroundWorker.ReportProgress((int)progressCurrent);
 
-			using (FileStream stream = new FileStream(resultFile, FileMode.Open, FileAccess.Write)) {
+			using (FileStream stream = new FileStream(resultFile, FileMode.Create, FileAccess.Write))
 				workbook.Write(stream);
-				stream.Close();
-			}
 
 			progressCurrent += progressStep;
 			backgroundWorker.ReportProgress((int)progressCurrent);

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace BzWorkingTime {
 	public class ItemWorkPeriod {
-		public string Id { get; set; }
+		public string ID { get; set; }
 		private string empty = "---";
 
 		public DateTime? TimestampX { get; set; }
@@ -15,7 +16,7 @@ namespace BzWorkingTime {
 				if (TimestampX == null) {
 					return empty;
 				} else {
-					return ((DateTime)TimestampX).ToString();
+					return TimestampX.Value.ToString();
 				}
 			}
 		}
@@ -26,7 +27,10 @@ namespace BzWorkingTime {
 				if (DateStart == null) {
 					return empty;
 				} else {
-					return ((DateTime)DateStart).ToString("HH:mm:ss");
+					if (string.IsNullOrEmpty(ID))
+						return empty;
+
+					return DateStart.Value.ToLongTimeString();
 				}
 			}
 		}
@@ -37,7 +41,9 @@ namespace BzWorkingTime {
 				if (DateFinish == null) {
 					return empty;
 				} else {
-					return ((DateTime)DateFinish).ToString("HH:mm:ss");
+					if (DateFinish.Value.Date == DateStart.Value.Date)
+						return (DateFinish.Value.ToLongTimeString());
+					return DateFinish.Value.ToString();
 				}
 			}
 		}
@@ -48,13 +54,27 @@ namespace BzWorkingTime {
 				if (Duration == null) {
 					return empty;
 				} else {
-					return ((TimeSpan)Duration).ToString();
+					return Duration.Value.ToString();
 				}
 			}
 		}
 
-		public ItemWorkPeriod() {
+		public string DayOfWeek {
+			get {
+				if (Date == null) return empty;
+				return DateTimeFormatInfo.CurrentInfo.GetDayName(Date.DayOfWeek);
+			}
+		}
 
+		public DateTime Date { get; set; }
+		public string DateString {
+			get {
+				return Date.ToShortDateString();
+			}
+		}
+
+		public ItemWorkPeriod(DateTime date) {
+			Date = date;
 		}
 	}
 }

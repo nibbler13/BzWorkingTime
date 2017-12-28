@@ -28,6 +28,8 @@
             </DockPanel>
         </DataTemplate>
     </Window.Resources>
+    
+    
     <Grid>
         <TabControl Grid.RowSpan="4" Grid.ColumnSpan="2">
             <TabItem Header="Редактирование">
@@ -47,23 +49,36 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="10"/>
                     </Grid.RowDefinitions>
+                    
+                    
                     <TextBlock Text="Сотрудник"/>
-                    <TextBox Grid.Column="1" IsReadOnly="True" Margin="10,0" x:Name="TextBoxSelected" Text="{Binding SelectedEmployee.FullName}"/>
-                    <Button Grid.Column="2" Content="Выбрать" Width="85" x:Name="ButtonSelect" Click="ButtonSelect_Click"/>
-                    <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10">
-                        <TextBlock Text="Дата:" VerticalAlignment="Center"/>
-                        <DatePicker SelectedDateFormat="Long" Width="140" Margin="10,0,0,0" 
-                                    SelectedDate="{Binding DateTimeSelected}"
-                                    SelectedDateChanged="DatePickerSelected_SelectedDateChanged"/>
+                    <TextBox Grid.Column="1" IsReadOnly="True" Margin="10,0" x:Name="TextBoxSelected" 
+                             Text="{Binding SelectedEmployee.FullName}"/>
+                    <Button Grid.Column="2" Content="Выбрать" Width="85" x:Name="ButtonSelect" 
+                            Click="ButtonSelect_Click"/>
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Orientation="Horizontal" 
+                                HorizontalAlignment="Center" Margin="0,10">
+                        <TextBlock Text="Период:" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Text="с" VerticalAlignment="Center" Margin="5,0"/>
+                        <DatePicker SelectedDateFormat="Long" Width="140" Margin="5,0" 
+                                    SelectedDate="{Binding DateTimeEditStart}"
+                                    SelectedDateChanged="DatePickerSelected_EditDateChanged"/>
+                        <TextBlock Text="по" VerticalAlignment="Center" Margin="5,0"/>
+                        <DatePicker SelectedDateFormat="Long" Width="140" Margin="5,0" 
+                                    SelectedDate="{Binding DateTimeEditFinish}"
+                                    SelectedDateChanged="DatePickerSelected_EditDateChanged"/>
                     </StackPanel>
                     <ListView Grid.Row="2" Grid.ColumnSpan="3" ItemsSource="{Binding WorkPeriods}"
-                              SelectionChanged="ListView_SelectionChanged" SelectionMode="Single" x:Name="ListViewWorkTimes">
+                              SelectionChanged="ListView_SelectionChanged" SelectionMode="Single" x:Name="ListViewWorkTimes"
+                              GridViewColumnHeader.Click="ListViewHeader_Click" SelectedItem="{Binding SelectedWorkPeriod}" >
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Дата модификации" DisplayMemberBinding="{Binding ModificationTime}"/>
-                                <GridViewColumn Header="Начало    " DisplayMemberBinding="{Binding Start}"/>
+                                <GridViewColumn Header="Дата" DisplayMemberBinding="{Binding DateString}"/>
+                                <GridViewColumn Header="День недели" DisplayMemberBinding="{Binding DayOfWeek}"/>
+                                <GridViewColumn Header="Начало" DisplayMemberBinding="{Binding Start}"/>
                                 <GridViewColumn Header="Окончание" DisplayMemberBinding="{Binding Finish}"/>
                                 <GridViewColumn Header="Продолжительность" DisplayMemberBinding="{Binding DurationTime}"/>
+                                <GridViewColumn Header="Дата модификации" DisplayMemberBinding="{Binding ModificationTime}"/>
                             </GridView>
                         </ListView.View>
                     </ListView>
@@ -73,19 +88,24 @@
                                           Value="{Binding Path=TimeStart, UpdateSourceTrigger=PropertyChanged}" x:Name="TimePickerStart"/>
                         <TextBlock Text="Окончание:" Margin="5,0"/>
                         <xctrk:TimePicker Width="100" Margin="5,0" TimeInterval="0:30:0" 
-                                          Value="{Binding Path=TimeEnd, UpdateSourceTrigger=PropertyChanged}" x:Name="TimePickerEnd"/>
+                                          Value="{Binding Path=TimeFinish, UpdateSourceTrigger=PropertyChanged}" x:Name="TimePickerFinish"/>
                     </StackPanel>
                     <StackPanel Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
                         <TextBlock Text="Продолжительность:" Margin="5,0"/>
                         <TextBox IsReadOnly="True" Width="60" Margin="5,0" x:Name="TextBoxPeriod" Text="{Binding Duration}"/>
                     </StackPanel>
                     <StackPanel Grid.Row="6" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="Добавить" Margin="20,0,20,0" Width="85" x:Name="ButtonAdd" Click="ButtonAddOrChange_Click" IsEnabled="False"/>
-                        <Button Content="Изменить" Margin="20,0,20,0" Width="85" x:Name="buttonChange" Click="ButtonAddOrChange_Click" IsEnabled="False"/>
-                        <Button Content="Удалить" Margin="20,0,20,0" Width="85" x:Name="ButtonDelete" Click="ButtonDelete_Click" IsEnabled="False"/>
+                        <Button Content="Добавить" Margin="20,0,20,0" Width="85" 
+                                x:Name="ButtonAdd" Click="ButtonAddOrChange_Click" IsEnabled="False"/>
+                        <Button Content="Изменить" Margin="20,0,20,0" Width="85" 
+                                x:Name="ButtonChange" Click="ButtonAddOrChange_Click" IsEnabled="False"/>
+                        <Button Content="Удалить" Margin="20,0,20,0" Width="85" 
+                                x:Name="ButtonDelete" Click="ButtonDelete_Click" IsEnabled="False"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
+            
+            
             <TabItem Header="Сводный отчет">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
@@ -95,17 +115,24 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    
+                    
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,0">
-                        <TextBlock Text="Период формирования:" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Text="Период:" VerticalAlignment="Center" Margin="5,0"/>
                         <TextBlock Text="с" VerticalAlignment="Center" Margin="5,0"/>
-                        <DatePicker Width="140" SelectedDateFormat="Long" Margin="5,0" x:Name="DatePickerReportStart" SelectedDate="{Binding DateTimeReportStart}"/>
+                        <DatePicker Width="140" SelectedDateFormat="Long" Margin="5,0" 
+                                    x:Name="DatePickerReportStart" SelectedDate="{Binding DateTimeReportStart}"/>
                         <TextBlock Text="по" Margin="5,0" VerticalAlignment="Center"/>
-                        <DatePicker Width="140" SelectedDateFormat="Long" Margin="5,0" x:Name="DatePickerReportFinish" SelectedDate="{Binding DateTimeReportFinish}"/>
+                        <DatePicker Width="140" SelectedDateFormat="Long" Margin="5,0" 
+                                    x:Name="DatePickerReportFinish" SelectedDate="{Binding DateTimeReportFinish}"/>
                     </StackPanel>
+                    
                     <CheckBox Grid.Row="1" HorizontalAlignment="Center" Content="Для всех сотрудников" Margin="0,20" 
-                              IsChecked="true" x:Name="CheckBoxReportForAll" Checked="CheckBoxReportForAll_CheckedChanged" Unchecked="CheckBoxReportForAll_CheckedChanged"/>
+                              IsChecked="true" x:Name="CheckBoxReportForAll" Checked="CheckBoxReportForAll_CheckedChanged" 
+                              Unchecked="CheckBoxReportForAll_CheckedChanged"/>
+                    
                     <ListView Grid.Row="2" ItemsSource="{Binding ReportEmployees}" IsSynchronizedWithCurrentItem="True"
-                              x:Name="ListViewReportEmployees" GridViewColumnHeader.Click="ListViewReportEmployees_Click" IsEnabled="False"
+                              x:Name="ListViewReportEmployees" GridViewColumnHeader.Click="ListViewHeader_Click" IsEnabled="False"
                               SelectionChanged="ListViewReportEmployees_SelectionChanged">
                         <ListView.View>
                             <GridView>
@@ -131,6 +158,7 @@
             </TabItem>
         </TabControl>
 
+        
         <Grid Height="10" VerticalAlignment="Bottom">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

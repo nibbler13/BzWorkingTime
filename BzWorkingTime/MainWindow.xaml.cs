@@ -34,7 +34,8 @@ namespace BzWorkingTime {
 
 		private MySqlClient mySqlClient;
 
-		public DateTime DateTimeSelected { get; set; }
+		public DateTime DateTimeEditStart { get; set; }
+		public DateTime DateTimeEditFinish { get; set; }
 		public DateTime DateTimeReportStart { get; set; }
 		public DateTime DateTimeReportFinish { get; set; }
 
@@ -47,24 +48,26 @@ namespace BzWorkingTime {
 				if (value != _timeStart) {
 					_timeStart = value;
 					NotifyPropertyChanged();
-					Duration = TimeEnd - TimeStart;
+					Duration = TimeFinish - TimeStart;
 				}
 			}
 		}
 
-		private DateTime _timeEnd;
-		public DateTime TimeEnd {
+		private DateTime _timeFinish;
+		public DateTime TimeFinish {
 			get {
-				return _timeEnd;
+				return _timeFinish;
 			}
 			set {
-				if (value != _timeEnd) {
-					_timeEnd = value;
+				if (value != _timeFinish) {
+					_timeFinish = value;
 					NotifyPropertyChanged();
-					Duration = TimeEnd - TimeStart;
+					Duration = TimeFinish - TimeStart;
 				}
 			}
 		}
+
+		public ItemWorkPeriod SelectedWorkPeriod { get; set; }
 
 		private ItemEmployee _selectedEmployee;
 		public ItemEmployee SelectedEmployee {
@@ -95,19 +98,23 @@ namespace BzWorkingTime {
 		public ObservableCollection<ItemWorkPeriod> WorkPeriods { get; set; }
 		public ObservableCollection<ItemEmployee> ReportEmployees { get; set; }
 
-		private ListSortDirection _sortDirection;
-		private GridViewColumnHeader _sortColumn;
+		private ListSortDirection _sortDirectionListViewEdit;
+		private GridViewColumnHeader _sortColumnListViewEdit;
+		private ListSortDirection _sortDirectionListViewReport;
+		private GridViewColumnHeader _sortColumnListViewReport;
 
 
 		public MainWindow() {
 			WorkPeriods = new ObservableCollection<ItemWorkPeriod>();
 			ReportEmployees = new ObservableCollection<ItemEmployee>();
 			mySqlClient = new MySqlClient();
-			DateTimeSelected = DateTime.Now;
+			DateTimeEditStart = DateTime.Now;
+			DateTimeEditFinish = DateTime.Now;
 			DateTimeReportStart = DateTime.Now;
 			DateTimeReportFinish = DateTime.Now;
 			TimeStart = GetSelectedDateTime();
-			TimeEnd = GetSelectedDateTime();
+			TimeFinish = GetSelectedDateTime();
+
 			DataContext = this;
 			InitializeComponent();
 			Closed += MainWindow_Closed;
@@ -127,7 +134,7 @@ namespace BzWorkingTime {
 
 		private void ButtonAddOrChange_Click(object sender, RoutedEventArgs e) {
 			DateTime? start = TimePickerStart.Value;
-			DateTime? finish = TimePickerEnd.Value;
+			DateTime? finish = TimePickerFinish.Value;
 
 			string error = string.Empty;
 
@@ -148,18 +155,23 @@ namespace BzWorkingTime {
 
 			if (sender == ButtonAdd)
 				mySqlClient.Insert(SelectedEmployee.ID, (DateTime)start, (DateTime)finish);
-			else if (sender == buttonChange)
-				mySqlClient.Update((ListViewWorkTimes.SelectedItem as ItemWorkPeriod).Id, (DateTime)start, (DateTime)finish);
+			else if (sender == ButtonChange)
+				mySqlClient.Update((ListViewWorkTimes.SelectedItem as ItemWorkPeriod).ID, (DateTime)start, (DateTime)finish);
 			
 			UpdateWorkPeriods();
 		}
 		
 		private void ButtonDelete_Click(object sender, RoutedEventArgs e) {
+			if (SelectedWorkPeriod == null) {
+				System.Windows.MessageBox.Show(this, "Не выбрана запись для удаления");
+				return;
+			}
+
 			if (System.Windows.MessageBox.Show(this, "Вы уверены, что хотите удалить выбранную запись?", "", 
 				MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.No)
 				return;
 
-			mySqlClient.Delete(SelectedEmployee.ID);
+			mySqlClient.Delete(SelectedWorkPeriod.ID);
 			UpdateWorkPeriods();
 		}
 
@@ -169,57 +181,44 @@ namespace BzWorkingTime {
 			mySqlClient.CloseConnection();
 		}
 
-		private void DatePickerSelected_SelectedDateChanged(object sender, SelectionChangedEventArgs e) {
+
+
+		private void DatePickerSelected_EditDateChanged(object sender, SelectionChangedEventArgs e) {
 			UpdateWorkPeriods();
 		}
 
+
+
 		private void UpdateWorkPeriods() {
-			if (SelectedEmployee == null || DateTimeSelected == null)
+			if (SelectedEmployee == null || 
+				DateTimeEditStart == null ||
+				DateTimeEditFinish == null)
 				return;
 
-			List<ItemWorkPeriod> workPeriods = mySqlClient.GetWorkPeriods(SelectedEmployee.ID,
-				DateTimeSelected.ToString("yyyy-MM-dd"));
+			List<ItemWorkPeriod> workPeriods = mySqlClient.GetWorkPeriods(
+				SelectedEmployee.ID,
+				DateTimeEditStart,
+				DateTimeEditFinish);
 
 			WorkPeriods.Clear();
-			ButtonAdd.IsEnabled = false;
-			buttonChange.IsEnabled = false;
-			ButtonDelete.IsEnabled = false;
 
 			if (workPeriods.Count == 0) {
-				WorkPeriods.Add(new ItemWorkPeriod());
+				WorkPeriods.Add(new ItemWorkPeriod(new DateTime()));
 				ButtonAdd.IsEnabled = true;
 				return;
 			}
+
+			workPeriods.Sort((x, y) => DateTime.Compare(x.Date, y.Date));
 
 			foreach (ItemWorkPeriod item in workPeriods)
 				WorkPeriods.Add(item);
 
 			ListViewWorkTimes.SelectedItem = ListViewWorkTimes.Items[0];
-
-			buttonChange.IsEnabled = true;
-			ButtonDelete.IsEnabled = true;
-		}
-
-		private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			if (ListViewWorkTimes.SelectedItems.Count == 0) {
-				TimeStart = GetSelectedDateTime();
-				TimeEnd = GetSelectedDateTime();
-				return;
-			}
-
-			ItemWorkPeriod workPeriod = ListViewWorkTimes.SelectedItem as ItemWorkPeriod;
-			TimeStart = workPeriod.DateStart == null ? GetSelectedDateTime() : (DateTime)workPeriod.DateStart;
-			TimeEnd = workPeriod.DateFinish == null ? GetSelectedDateTime() : (DateTime)workPeriod.DateFinish;
-
-			if (TimeStart != null && TimeEnd != null) {
-				Duration = TimeEnd - TimeStart;
-			} else {
-				Duration = new TimeSpan();
-			}
 		}
 
 		private DateTime GetSelectedDateTime() {
-			return new DateTime(DateTimeSelected.Year, DateTimeSelected.Month, DateTimeSelected.Day, 0, 0, 0);
+			if (SelectedWorkPeriod == null) return new DateTime();
+			return SelectedWorkPeriod.Date;
 		}
 
 
@@ -236,15 +235,45 @@ namespace BzWorkingTime {
 
 
 
-		private void ListViewReportEmployees_Click(object sender, RoutedEventArgs e) {
-			SortListViewColumn(sender, e, ref _sortColumn, ref _sortDirection);
+		private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+			ButtonAdd.IsEnabled = false;
+			ButtonChange.IsEnabled = false;
+			ButtonDelete.IsEnabled = false;
+
+			if (ListViewWorkTimes.SelectedItems.Count == 0) {
+				TimeStart = GetSelectedDateTime();
+				TimeFinish = GetSelectedDateTime();
+				return;
+			}
+
+			TimeStart = SelectedWorkPeriod.DateStart ?? GetSelectedDateTime();
+			TimeFinish = SelectedWorkPeriod.DateFinish ?? GetSelectedDateTime();
+			Duration = SelectedWorkPeriod.Duration ?? new TimeSpan();
+
+			if (TimeFinish.Date != TimeStart.Date)
+				TimeFinish = TimeStart.Date.AddSeconds(TimeFinish.TimeOfDay.TotalSeconds);
+
+			if (string.IsNullOrEmpty(SelectedWorkPeriod.ID)) {
+				ButtonAdd.IsEnabled = true;
+			} else {
+				ButtonChange.IsEnabled = true;
+				ButtonDelete.IsEnabled = true;
+			}
+		}
+
+		private void ListViewHeader_Click(object sender, RoutedEventArgs e) {
+			if (sender == ListViewWorkTimes)
+				SortListViewColumn(sender, e, ref _sortColumnListViewEdit, ref _sortDirectionListViewEdit);
+			else if (sender == ListViewReportEmployees)
+				SortListViewColumn(sender, e, ref _sortColumnListViewReport, ref _sortDirectionListViewReport);
 		}
 
 		private void ListViewReportEmployees_SelectionChanged(object sender, SelectionChangedEventArgs e) {
 			ButtonRemoveEmployeeFromReport.IsEnabled = ListViewReportEmployees.SelectedItems.Count > 0;
 		}
 
-		private void SortListViewColumn(object sender, RoutedEventArgs e, ref GridViewColumnHeader columnHeader, ref ListSortDirection sortDirection) {
+		private void SortListViewColumn(object sender, RoutedEventArgs e, 
+			ref GridViewColumnHeader columnHeader, ref ListSortDirection sortDirection) {
 			GridViewColumnHeader column = e.OriginalSource as GridViewColumnHeader;
 			if (column == null)
 				return;
@@ -323,6 +352,8 @@ namespace BzWorkingTime {
 			backgroundWorker.ProgressChanged += BackgroundWorker_ProgressChanged;
 			backgroundWorker.RunWorkerAsync(CheckBoxReportForAll.IsChecked);
 		}
+
+
 
 		private void BackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e) {
 			ProgressBarReport.Value = e.ProgressPercentage;
