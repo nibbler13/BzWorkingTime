@@ -67,15 +67,12 @@ namespace BzWorkingTime {
 
 			query += Environment.NewLine + queryReportOrder;
 
-			Dictionary<string, object> parameters = new Dictionary<string, object>() {
-				{"@dateStart", dateStart },
-				{"@dateFinish", dateFinish }
-			};
-
-			if (!string.IsNullOrEmpty(users))
-				parameters.Add("@usersIdList", users);
+			query = query.
+				Replace("@dateStart", "'" + dateStart.ToString("yyyy-MM-dd HH:mm:ss") + "'").
+				Replace("@dateFinish", "'" + dateFinish.ToString("yyyy-MM-dd HH:mm:ss") + "'").
+				Replace("@usersIdList", users);
 			
-			return GetDataTable(query, parameters);
+			return GetDataTable(query, new Dictionary<string, object>());
 		}
 
 		public void Delete(string id) {
@@ -253,7 +250,7 @@ namespace BzWorkingTime {
 
 			try {
 				MySqlCommand command = new MySqlCommand(query, connection);
-				command.Prepare();
+				//command.Prepare();
 
 				if (parameters.Count > 0)
 					foreach (KeyValuePair<string, object> parameter in parameters)

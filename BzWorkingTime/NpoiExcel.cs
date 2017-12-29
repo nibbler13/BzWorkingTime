@@ -65,7 +65,6 @@ namespace BzWorkingTime {
 					
 					ICell cell = row.CreateCell(columnNumber);
 					string value = dataRow[dataColumn].ToString();
-					Console.WriteLine("value: '" + value + "'");
 
 					if (dataColumn.ColumnName.Contains("DATE")) {
 						if (DateTime.TryParse(value, out DateTime dateTime))
